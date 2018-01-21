@@ -1,0 +1,482 @@
+<html>
+<head>
+<title>JSUtil test</title>
+<script type="text/javascript" src="./jsutil.js"></script>
+<script type="text/javascript">
+$.onReady(function() {
+	var $r,
+		testNumber = 0,
+		numFailed = 0;
+
+	function run(cb) {
+		var r = document.getElementById('result');
+		$r = $('#result');
+		if ($r.get(0) != r) {
+			r.innerHTML = '<li class="error">Setup fail</li>';
+			cb();
+			return;
+		}
+		var o,
+			$p = $('.p'),
+			$c = $('.c'),
+			t = Math.random().toString(),
+			h = '<span>'+t+'</span>',
+			$h = $.createElement(h),
+			$i = $.createElement('input', {'type': 'text', 'class': 'i'}),
+			p0 = document.getElementById('p0'),
+			p1 = document.getElementById('p1'),
+			c00 = document.getElementById('c00'),
+			c01 = document.getElementById('c01'),
+			c10 = document.getElementById('c10'),
+			c11 = document.getElementById('c11');
+
+		function isReset() {
+			assert(
+				p0.children.length == 2,
+				p0.children[0] == c00,
+				p0.children[1] == c01,
+				p1.children.length == 2,
+				p1.children[0] == c10,
+				p1.children[1] == c11
+			);
+		}
+
+		// #1. JSUtil.createElement, .get
+		assert(
+			$h.get(0).outerHTML.toLowerCase() == h,
+			$i[0].getAttribute('type') == 'text',
+			$i[0].className == 'i'
+		);
+
+		// #2. new(sel), [], .get
+		assert(
+			$p.length == 2,
+			$p[0] == p0,
+			$p.get(1) == p1
+		);
+
+		// #3. .getObj
+		o = $p.getObj(1);
+		assert(
+			o.length == 1,
+			o[0] == p1,
+			o == $p.getObj(1)
+		);
+
+		// #4. new(sel, <obj>)
+		o = $('.c', $p);
+		assert(
+			o.length == 4,
+			o[1] == c01,
+			o[3] == c11
+		);
+
+		// #5. .children()
+		o = $p.children();
+		assert(
+			o.length == 4,
+			o[0] == c00,
+			o[1] == c01,
+			o[2] == c10,
+			o[3] == c11
+		);
+
+		// #6. .children(idx)
+		o = $p.children(1);
+		assert(
+			o.length == 2,
+			o[0] == c01,
+			o[1] == c11
+		);
+
+		// #7. .text
+		o = $c.text(t);
+		assert(
+			o.length == 4,
+			o[0].innerText == t,
+			o[3].innerText == t
+		);
+
+		// #8. .html
+		o = $c.html(h);
+		assert(
+			o.length == 4,
+			o.html().toLowerCase() == h,
+			o[3].innerHTML.toLowerCase() == h,
+			$('span', o).length == 4
+		);
+
+		// #9. .remove
+		$c.children().remove();
+		assert(
+			$c[0].children.length == 0,
+			$c[1].children.length == 0
+		);
+
+		// #10. .append
+		$p.append(h);
+		assert(
+			p0.children[2].outerHTML.toLowerCase() == h,
+			p0.children[0] == c00,
+			p1.children[2].outerHTML.toLowerCase() == h,
+			p1.children[0] == c10
+		);
+
+		// #11. .prepend
+		$p.prepend($h);
+		assert(
+			p0.children[0] == $h[0],
+			p0.children[1] == c00,
+			p1.children[0].outerHTML.toLowerCase() == h,
+			p1.children[1] == c10
+		);
+
+		// #12. JSUtil.collect
+		$.collect($p.children(0), $p.children(3)).remove();
+		isReset();
+
+		// #13. .appendTo(<node>)
+		$h.appendTo(p1);
+		assert(p1.children[2] == $h[0]);
+
+		// #14. .appendTo(<obj>) - move $h[0] to p0
+		$h.appendTo($p);
+		assert(
+			p0.children[2] == $h[0],
+			p1.children.length == 3,
+			p1.children[2].outerHTML.toLowerCase() == h
+		);
+
+		// #15. .prependTo(<node>) - move $h[0] to p1
+		$h.prependTo(p1);
+		assert(
+			p1.children[0] == $h[0],
+			p0.children.length == 2,
+			p1.children.length == 4
+		);
+
+		// #16. .prependTo(<obj>) - move $h[0] to p0
+		$h.prependTo($p);
+		assert(
+			p0.children[0] == $h[0],
+			p0.children[1] == c00,
+			p1.children[0].outerHTML.toLowerCase() == h,
+			p1.children[2] == c11
+		);
+
+		// #17. new(sel, <obj>).remove
+		$('span', $p).remove();
+		isReset();
+
+		// #18. .replaceWith(<obj>)
+		$c.replaceWith($h);
+		assert(
+			p0.children.length == 2,
+			p0.children[0] == $h[0],
+			$p.html().toLowerCase() == h + h,
+			p1.innerHTML.toLowerCase() == h + h
+		);
+
+		// #19. .replaceWith(<node>)
+		o = $('span', $p).replaceWith(c00);
+		assert(
+			p0.children.length == 2,
+			p0.children[0] == c00,
+			p0.children[1].outerHTML == c00.outerHTML,
+			p0.innerHTML == p1.innerHTML,
+			o.jsutil,
+			o.length == 1,
+			o[0] == c00
+		);
+
+		// #20. new(<node>), new(<node>[]), append(<node>), prepend(<node>)
+		$p.html('').getObj(0).append(c01).prepend(c00);
+		$(p1).append($([c10, c11]));
+		isReset();
+
+		// #21. JSUtil.inArray
+		o = ['item-1', 'item-2'];
+		assert(
+			$.inArray(o, 'item-1') === 0,
+			$.inArray(o, 'item-2') == 1,
+			$.inArray(o, 'item-3') == -1,
+			$.inArray(o, 'item-1', 1) == -1
+		);
+
+		// #22. .setClass
+		$h.setClass('class-1 class-2');
+		o = $h[0].className.split(' ');
+		assert(
+			o.length == 2,
+			$.inArray(o, 'class-1') != -1,
+			$.inArray(o, 'class-2') != -1
+		);
+
+		// #23. .hasClass
+		assert(
+			$h.hasClass('class-1'),
+			$h.hasClass('class-2'),
+			!$h.hasClass('class-3')
+		);
+
+		// #24. .toggleClass
+		$h.toggleClass('class-2').toggleClass('class-3');
+		o = $h[0].className.split(' ');
+		assert(
+			o.length == 2,
+			$.inArray(o, 'class-1') != -1,
+			$.inArray(o, 'class-3') != -1
+		);
+
+		// #25. .addClass
+		$h.addClass('class-4');
+		o = $h[0].className.split(' ');
+		assert(
+			o.length == 3,
+			$.inArray(o, 'class-4') != -1
+		);
+
+		// #26. .removeClass
+		$h.removeClass('class-1');
+		assert(
+			!$h.hasClass('class-1'),
+			$h.hasClass('class-3'),
+			$h.hasClass('class-4')
+		);
+
+		// #27. .removeClass
+		$h.removeClass('class-3').removeClass('class-4');
+		assert($h[0].className === '');
+
+		// #28. .css
+		$p.css('color', 'blue').css({'backgroundColor': 'black', 'fontSize': '10pt'});
+		assert(
+			p0.style.color == 'blue',
+			p0.style.backgroundColor == 'black',
+			p0.style.fontSize == '10pt',
+
+			p1.style.color == 'blue',
+			p1.style.backgroundColor == 'black',
+			p1.style.fontSize == '10pt'
+		);
+		$p.css({'color': null, 'backgroundColor': null, 'fontSize': null});
+
+		// #29. .hide, isVisible
+		$p.hide();
+		assert(
+			p0.style.display == 'none',
+			!$p.isVisible(),
+			p1.style.display == 'none',
+			!$p.isVisible(1)
+		);
+
+		// #30. .show
+		$p.getObj(0).show();
+		assert(p0.style.display === '');
+
+		// #31. .toggle
+		$p.toggle();
+		assert(
+			p0.style.display == 'none',
+			p1.style.display === '',
+			$p.isVisible(1)
+		);
+		$p.show();
+
+		// #32. .attr(property, value), .attr(property)
+		$p.attr('title', t);
+		assert(
+			p0.getAttribute('title') == t,
+			p1.getAttribute('title') == t,
+			$p.attr('title') == t
+		);
+
+		// #33. .attr(properties), getAttr
+		$p.attr({'title': null, 'accesskey': 'q'});
+		assert(
+			!p0.hasAttribute('title'),
+			p0.getAttribute('accesskey') == 'q',
+			!p1.hasAttribute('title'),
+			p1.getAttribute('accesskey') == 'q',
+
+			$p.getAttr('title') === null,
+			$p.getAttr('accesskey') == 'q',
+			$c.getAttr('accesskey') === null,
+			$c.getAttr('accesskey', true) == 'q'
+		);
+
+		// #34. .attr(property, <null>)
+		$p.attr('accesskey', null);
+		assert(
+			!p0.hasAttribute('accesskey'),
+			!p1.hasAttribute('accesskey')
+		);
+
+		// #35. .data(property, value), .data(property)
+		$p.data('parent-1', 'yes');
+		assert(
+			$p.data('parent-1') == 'yes',
+			p1.getAttribute('data-parent-1') == 'yes'
+		);
+
+		// #36. .data(properties)
+		$p.data({'parent-1': null, 'parent-2': 'yes'});
+		assert(
+			$p.data('parent-1') === null,
+			$p.data('parent-2') == 'yes'
+		);
+
+		// #37. .getData
+		assert(
+			$p.getData('parent-2') == 'yes',
+			$c.getData('parent-2') === null,
+			$c.getData('parent-2', true) == 'yes'
+		);
+
+		// #38 .val
+		$i.val(t);
+		assert(
+			$i[0].value == t,
+			$i.val() == t
+		);
+
+		// #39 .disable(idx)
+		$i = $.collect($i, $i[0].cloneNode(true));
+		$i.disable(1);
+		assert(
+			!$i[0].disabled,
+			$i[1].disabled
+		);
+
+		// #40. .enable(idx)
+		$i.enable(1);
+		assert(!$i[1].disabled);
+
+		// #41. .disable()
+		$i.disable();
+		assert(
+			$i[0].disabled,
+			$i[1].disabled
+		);
+
+		// #42. .enable()
+		$i.enable();
+		assert(
+			!$i[0].disabled,
+			!$i[1].disabled
+		);
+
+		// #43. JSUtil.shortenNumber
+		assert(
+			$.shortenNumber(1.23456, 5) == '1.2346',
+			$.shortenNumber(123456, 5).search(/^1\.2[eE]\+?5$/) == 0,
+			$.shortenNumber(1.2345e23, 5).search(/^1[eE]\+?23$/) == 0,
+			$.shortenNumber(1.2345e-23, 5).search(/^1[eE]-23$/) == 0,
+
+			$.shortenNumber(-1.23456, 5) == '-1.2346',
+			$.shortenNumber(-123456, 5).search(/^-1.2[eE]\+?5$/) == 0,
+			$.shortenNumber(-1.2345e23, 5).search(/^-1[eE]\+?23$/) == 0,
+			$.shortenNumber(-1.2345e-23, 5).search(/^-1[eE]-23$/) == 0
+		);
+
+		// #44. JSUtil.formatNumber
+		assert(
+			$.formatNumber(123456) == '123,456',
+			$.formatNumber(123456.78) == '123,456.78',
+			$.formatNumber(123456.78, 1) == '123,456.8',
+			$.formatNumber(1.23456) == '1.23456',
+			$.formatNumber(1.23456e23).search(/^1\.23456[eE]\+?23$/) == 0,
+
+			$.formatNumber(-123456) == '-123,456',
+			$.formatNumber(-123456.78) == '-123,456.78',
+			$.formatNumber(-123456.78, 1) == '-123,456.8',
+			$.formatNumber(-1.23456) == '-1.23456',
+			$.formatNumber(-1.23456e23).search(/^-1\.23456[eE]\+?23$/) == 0
+		);
+
+		// #45. JSUtil.round
+		assert(
+			$.round(1.23456) == 1,
+			$.round(1.23456, 4) == 1.2346,
+			$.round(-1.23456) == -1,
+			$.round(-1.23456, 4) == -1.2346
+		);
+
+		// #46. JSUtil.roundFromZero
+		assert(
+			$.roundFromZero(1.2) == 2,
+			$.roundFromZero(-1.2) == -2
+		);
+
+		// #47. JSUtil.roundToZero
+		assert(
+			$.roundToZero(1.2) == 1,
+			$.roundToZero(-1.2) == -1
+		);
+
+		// #48. JSUtil.clamp
+		assert(
+			$.clamp(1, 5, 10) == 5,
+			$.clamp(7, 5, 10) == 7,
+			$.clamp(15, 5, 10) == 10
+		);
+
+		// #49. JSUtil.lerp
+		assert(
+			$.lerp(-1, 10, 20) == 10,
+			$.lerp(0.7, 10, 20) == 17,
+			$.lerp(1.5, 10, 20) == 20
+		);
+
+		// #50. JSUtil.fillArray
+		o = Array(3);
+		$.fillArray(o, 'test');
+		assert(
+			o.length == 3,
+			o[0] == 'test',
+			o[1] == 'test',
+			o[2] == 'test'
+		);
+
+		// #51. JSUtil.keys
+		o = $.keys({'a': 1, 'b': 2});
+		assert(
+			o.length == 2,
+			$.inArray(o, 'a') != -1,
+			$.inArray(o, 'b') != -1
+		)
+
+		// #52. JSUtil.strRepeat
+		assert($.strRepeat('test', 3) == 'testtesttest');
+
+		cb();
+	}
+
+	function assert() {
+		var failedConds = [];
+		++testNumber;
+		for (var i = 0; i < arguments.length; ++i) {
+			if (!arguments[i]) {
+				failedConds.push(i + 1);
+			}
+		}
+		if (failedConds.length > 0) {
+			++numFailed;
+			$r.append('<li class="error">Test ' + testNumber + ' (' + failedConds.join(',') + ') failed</li>');
+		}
+	}
+
+	run(function() {
+		$r.append('<li>' + (testNumber - numFailed) + '/' + testNumber + ' tests succeeded</li>');
+	});
+});
+</script>
+</head>
+<body>
+<div id="test">
+	<div class="p" id="p0"><div class="c" id="c00"></div><div class="c" id="c01"></div></div>
+	<div class="p" id="p1"><div class="c" id="c10"></div><div class="c" id="c11"></div></div>
+</div>
+<ul id="result"></ul>
+</body>
+</html>
